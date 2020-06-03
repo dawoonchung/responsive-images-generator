@@ -12,6 +12,8 @@ const {
   alt,
   baseSize,
   build,
+  className,
+  lazyload,
   source,
 } = argv;
 
@@ -32,7 +34,7 @@ breakpoints.set('xl', 2400);
 breakpoints.set('max', 3000);
 
 const generateSizes = (base) => {
-  const xs = base / 3;
+  const xs = Math.round(base / 3);
   const sm = xs * 2;
   const md = base;
   const lg = xs * 4;
@@ -211,7 +213,9 @@ const process = async () => {
     alt: altText,
     breakpoints,
     buildPath,
+    className,
     files: imgList,
+    lazyload,
     sizes,
     srcPath: build,
   });
