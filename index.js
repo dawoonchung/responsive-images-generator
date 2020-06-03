@@ -236,6 +236,8 @@ const process = async () => {
 
   await generateComponents({
     alt,
+    baseSize,
+    buildPath,
     breakpoints,
     className,
     files: imgList,
