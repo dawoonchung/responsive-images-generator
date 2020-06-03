@@ -120,7 +120,7 @@ const generateComponents = ({
       output += jpgs[i];
     }
 
-    output += `  <img ${lazyload ? 'data-src' : 'src'}="/${buildPath}/${basename}/${basename}-${imgSizes.xl2x}w.jpg" alt="${altText}" />\n`;
+    output += `  <img ${lazyload ? 'class="lazyload" data-src' : 'src'}="/${buildPath}/${basename}/${basename}-${imgSizes.xl2x}w.jpg" alt="${altText}" />\n`;
 
     output += '</picture>\n';
 

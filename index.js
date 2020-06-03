@@ -101,6 +101,7 @@ const resize = async () => {
   const tasks = [];
 
   imgs.forEach((img) => {
+    if (img === '.DS_Store') return;
     const imgPath = path.join(srcPath, img);
     const ext = path.extname(img);
     const baseName = path.basename(img, ext);
