@@ -1,17 +1,16 @@
 /* eslint-disable max-len */
 const fs = require('fs');
 const path = require('path');
-const camelcase = require('camelcase');
+const slugify = require('slugify');
 
 const generateComponents = ({
   alt,
   breakpoints,
-  buildPath,
   className,
   files,
   lazyload,
   sizes,
-  srcPath,
+  targetPath,
 }) => {
   const tasks = [];
   const classNames = [];
@@ -31,7 +30,7 @@ const generateComponents = ({
     const altText = alt[file];
     let output = `<picture class="${classNames.join(' ')}">\n`;
 
-    const FileName = camelcase(file, {pascalCase: true});
+    const basename = slugify(file, {lower: true});
 
     const webps = [];
     breakpoints.forEach((width, breakpoint) => {
@@ -39,7 +38,7 @@ const generateComponents = ({
 
       if (breakpoint === 'max') {
         const size = sizes.xl2x;
-        const srcSet = `/${srcPath}/${FileName}/${file}-${size}w.webp`;
+        const srcSet = `/${targetPath}/${basename}/${file}-${size}w.webp`;
 
         source += `  <source media="(min-width: ${width}px)" ${srcAttr}="${srcSet}" />\n`;
       } else if (breakpoint === 'xs') {
@@ -47,9 +46,9 @@ const generateComponents = ({
         const size2x = sizes.xs2x;
         const size3x = sizes.xs3x;
 
-        const srcSet = `/${srcPath}/${FileName}/${file}-${size}w.webp`;
-        const srcSet2x = `/${srcPath}/${FileName}/${file}-${size2x}w.webp`;
-        const srcSet3x = `/${srcPath}/${FileName}/${file}-${size3x}w.webp`;
+        const srcSet = `/${targetPath}/${basename}/${file}-${size}w.webp`;
+        const srcSet2x = `/${targetPath}/${basename}/${file}-${size2x}w.webp`;
+        const srcSet3x = `/${targetPath}/${basename}/${file}-${size3x}w.webp`;
 
         source += `  <source media="(min-resolution: 384dpi)" ${srcAttr}="${srcSet3x}" />\n`;
         source += `  <source media="(-webkit-min-device-pixel-ratio: 3)" ${srcAttr}="${srcSet3x}" />\n`;
@@ -60,8 +59,8 @@ const generateComponents = ({
         const size = sizes[breakpoint];
         const size2x = sizes[`${breakpoint}2x`];
 
-        const srcSet = `/${srcPath}/${FileName}/${file}-${size}w.webp`;
-        const srcSet2x = `/${srcPath}/${FileName}/${file}-${size2x}w.webp`;
+        const srcSet = `/${targetPath}/${basename}/${file}-${size}w.webp`;
+        const srcSet2x = `/${targetPath}/${basename}/${file}-${size2x}w.webp`;
 
         source += `  <source media="(min-width: ${width}px) and (min-resolution: 192dpi)" ${srcAttr}="${srcSet2x}" />\n`;
         source += `  <source media="(min-width: ${width}px) and (-webkit-min-device-pixel-ratio: 2)" ${srcAttr}="${srcSet2x}" />\n`;
@@ -81,7 +80,7 @@ const generateComponents = ({
 
       if (breakpoint === 'max') {
         const size = sizes.xl2x;
-        const srcSet = `/${srcPath}/${FileName}/${file}-${size}w.jpg`;
+        const srcSet = `/${targetPath}/${basename}/${file}-${size}w.jpg`;
 
         source += `  <source media="(min-width: ${width}px)" ${srcAttr}="${srcSet}" />\n`;
       } else if (breakpoint === 'xs') {
@@ -89,9 +88,9 @@ const generateComponents = ({
         const size2x = sizes.xs2x;
         const size3x = sizes.xs3x;
 
-        const srcSet = `/${srcPath}/${FileName}/${file}-${size}w.jpg`;
-        const srcSet2x = `/${srcPath}/${FileName}/${file}-${size2x}w.jpg`;
-        const srcSet3x = `/${srcPath}/${FileName}/${file}-${size3x}w.jpg`;
+        const srcSet = `/${targetPath}/${basename}/${file}-${size}w.jpg`;
+        const srcSet2x = `/${targetPath}/${basename}/${file}-${size2x}w.jpg`;
+        const srcSet3x = `/${targetPath}/${basename}/${file}-${size3x}w.jpg`;
 
         source += `  <source media="(min-resolution: 384dpi)" ${srcAttr}="${srcSet3x}" />\n`;
         source += `  <source media="(-webkit-min-device-pixel-ratio: 3)" ${srcAttr}="${srcSet3x}" />\n`;
@@ -102,8 +101,8 @@ const generateComponents = ({
         const size = sizes[breakpoint];
         const size2x = sizes[`${breakpoint}2x`];
 
-        const srcSet = `/${srcPath}/${FileName}/${file}-${size}w.jpg`;
-        const srcSet2x = `/${srcPath}/${FileName}/${file}-${size2x}w.jpg`;
+        const srcSet = `/${targetPath}/${basename}/${file}-${size}w.jpg`;
+        const srcSet2x = `/${targetPath}/${basename}/${file}-${size2x}w.jpg`;
 
         source += `  <source media="(min-width: ${width}px) and (min-resolution: 192dpi)" ${srcAttr}="${srcSet2x}" />\n`;
         source += `  <source media="(min-width: ${width}px) and (-webkit-min-device-pixel-ratio: 2)" ${srcAttr}="${srcSet2x}" />\n`;
@@ -117,12 +116,12 @@ const generateComponents = ({
       output += jpgs[i];
     }
 
-    output += `  <img ${lazyload ? 'data-src' : 'src'}="/${srcPath}/${FileName}/${file}-${sizes.xl2x}w.jpg" alt="${altText}" />\n`;
+    output += `  <img ${lazyload ? 'data-src' : 'src'}="/${targetPath}/${basename}/${file}-${sizes.xl2x}w.jpg" alt="${altText}" />\n`;
 
     output += '</picture>\n';
 
     const task = new Promise((resolve, reject) => fs.writeFile(
-        path.join(buildPath, FileName, 'index.html'),
+        path.join(targetPath, basename, 'index.html'),
         output,
         (err) => err ? reject(err) : resolve(),
     ));

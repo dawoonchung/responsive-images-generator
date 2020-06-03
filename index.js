@@ -1,29 +1,31 @@
-const path = require('path');
 const fs = require('fs-extra');
-const Promise = require('promise');
 const gm = require('gm');
 const imagemin = require('imagemin');
 const imageminWebp = require('imagemin-webp');
 const imageminMozJPEG = require('imagemin-mozjpeg');
-const camelcase = require('camelcase');
+const path = require('path');
+const Promise = require('promise');
+const sizeOf = require('image-size');
+const slugify = require('slugify');
+
 const argv = require('./argv');
 
 const {
-  alt,
+  altText,
   baseSize,
-  build,
+  buildPath,
   className,
   lazyload,
   source,
 } = argv;
 
-const altText = require(`./${alt}`);
+const alt = require(path.join(__dirname, altText));
 
 const generateComponents = require('./generateComponents');
 
 const srcPath = path.join(__dirname, source);
 const tmpPath = path.join(__dirname, 'tmp');
-const buildPath = path.join(__dirname, build);
+const targetPath = path.join(__dirname, buildPath);
 
 const breakpoints = new Map();
 breakpoints.set('xs', 0);
@@ -62,7 +64,18 @@ const generateSizes = (base) => {
   };
 };
 
-const sizes = generateSizes(baseSize);
+let sizes;
+
+if (typeof baseSize === 'number') sizes = generateSizes(baseSize);
+else {
+  const baseSizes = require(path.join(__dirname, baseSize));
+  sizes = {};
+
+  Object.keys(baseSizes).forEach((key) => {
+    sizes[key] = generateSizes(baseSizes[key]);
+  });
+}
+
 const imgList = [];
 
 // Remove temporary directory.
@@ -74,7 +87,7 @@ const removeTmp = () => new Promise((resolve, reject) => fs.remove(
 // Cleanup directories before processing images.
 const cleanup = () => new Promise((resolve, reject) => {
   const removeBuild = fs.remove(
-      buildPath,
+      targetPath,
       (err) => err ? reject(err) : resolve(),
   );
 
@@ -91,16 +104,26 @@ const resize = async () => {
     const imgPath = path.join(srcPath, img);
     const ext = path.extname(img);
     const baseName = path.basename(img, ext);
+    const imgSizes = typeof baseSize === 'number' ? sizes : sizes[baseName];
     const processedSizes = [];
+    const {width: srcWidth} = sizeOf(imgPath);
 
     // Store base names for later use.
     imgList.push(baseName);
 
-    Object.keys(sizes).forEach((key) => {
-      const size = sizes[key];
+    Object.keys(imgSizes).forEach((key) => {
+      const size = imgSizes[key];
       if (processedSizes.includes(size)) return;
 
-      const resizeName = `${baseName}-${size}w${ext}`;
+      if (size > srcWidth) {
+        console.warn('Target size larger than original!\n');
+        console.warn(`Target width: ${size}\n`);
+        console.warn(`Source width: ${srcWidth}\n`);
+      }
+
+      const basename = slugify(baseName, {lower: true});
+
+      const resizeName = `${basename}-${size}w${ext.toLowerCase()}`;
 
       const task = new Promise((resolve, reject) =>
         gm(imgPath)
@@ -121,14 +144,14 @@ const resize = async () => {
 };
 
 const processWebp = () => imagemin([path.join(tmpPath, '*.jpg')], {
-  destination: path.join(buildPath, 'webp'),
+  destination: path.join(targetPath, 'webp'),
   plugins: [
     imageminWebp({quality: 80}),
   ],
 });
 
 const processJPEG = () => imagemin([path.join(tmpPath, '*.jpg')], {
-  destination: path.join(buildPath, 'jpg'),
+  destination: path.join(targetPath, 'jpg'),
   plugins: [
     imageminMozJPEG({quality: 80}),
   ],
@@ -136,31 +159,33 @@ const processJPEG = () => imagemin([path.join(tmpPath, '*.jpg')], {
 
 const sortImgs = async () => {
   const tasks = [];
-  imgList.forEach((img) => {
-    const Img = camelcase(img, {pascalCase: true});
-    fs.mkdirSync(path.join(buildPath, Img));
+  imgList.forEach((baseName) => {
+    const basename = slugify(baseName, {lower: true});
+    fs.mkdirSync(path.join(targetPath, basename));
+
+    const imgSizes = typeof baseSize === 'number' ? sizes : sizes[baseName];
 
     const processedSizes = [];
-    Object.keys(sizes).forEach((key) => {
-      const size = sizes[key];
+    Object.keys(imgSizes).forEach((key) => {
+      const size = imgSizes[key];
 
       if (processedSizes.includes(size)) return;
 
-      const jpg = `${img}-${size}w.jpg`;
-      const webp = `${img}-${size}w.webp`;
+      const jpg = `${basename}-${size}w.jpg`;
+      const webp = `${basename}-${size}w.webp`;
 
       const renameWebp = new Promise((resolve, reject) => {
         fs.rename(
-            path.join(buildPath, 'webp', webp),
-            path.join(buildPath, Img, webp),
+            path.join(targetPath, 'webp', webp),
+            path.join(targetPath, basename, webp),
             (err) => err ? reject(err) : resolve(),
         );
       });
 
       const renameJpg = new Promise((resolve, reject) => {
         fs.rename(
-            path.join(buildPath, 'jpg', jpg),
-            path.join(buildPath, Img, jpg),
+            path.join(targetPath, 'jpg', jpg),
+            path.join(targetPath, basename, jpg),
             (err) => err ? reject(err) : resolve(),
         );
       });
@@ -175,12 +200,12 @@ const sortImgs = async () => {
   await Promise.all(tasks);
 
   const removeWebpDir = new Promise((resolve, reject) => fs.remove(
-      path.join(buildPath, 'webp'),
+      path.join(targetPath, 'webp'),
       (err) => err ? reject(err) : resolve(),
   ));
 
   const removeJpgDir = new Promise((resolve, reject) => fs.remove(
-      path.join(buildPath, 'jpg'),
+      path.join(targetPath, 'jpg'),
       (err) => err ? reject(err) : resolve(),
   ));
 
@@ -207,17 +232,16 @@ const process = async () => {
 
   await Promise.all([removeTmp(), sortImgs()]);
 
-  console.log('Done! Now generating your React components...');
+  console.log('Done! Now generating your HTML code...');
 
   await generateComponents({
-    alt: altText,
+    alt,
     breakpoints,
-    buildPath,
     className,
     files: imgList,
     lazyload,
     sizes,
-    srcPath: build,
+    targetPath,
   });
 
   console.log('Done!!!');
