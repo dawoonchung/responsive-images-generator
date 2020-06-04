@@ -2,19 +2,6 @@
 const yargs = require('yargs');
 
 const {argv} = yargs.options({
-  altText: {
-    alias: 'a',
-    default: 'alt.js',
-    description: 'Path to file containing alt texts. See documentation for the file structure.',
-    normalize: true,
-    type: 'string',
-  },
-  baseSize: {
-    alias: 's',
-    demandOption: true,
-    description: 'Base size of the image, or path to the file containing base sizes. Use \'md\' breakpoint. See documentation for details.',
-    normalize: true,
-  },
   buildPath: {
     alias: 't',
     default: 'build',
@@ -23,8 +10,14 @@ const {argv} = yargs.options({
     type: 'string',
   },
   className: {
-    alias: 'c',
     description: 'HTML class name',
+    type: 'string',
+  },
+  configFile: {
+    alias: 'c',
+    default: 'config.js',
+    description: 'Path to configuration file. See documentation for details.',
+    normalize: true,
     type: 'string',
   },
   lazyload: {

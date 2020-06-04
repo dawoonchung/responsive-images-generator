@@ -11,15 +11,14 @@ const slugify = require('slugify');
 const argv = require('./argv');
 
 const {
-  altText,
-  baseSize,
   buildPath,
   className,
+  configFile,
   lazyload,
   source,
 } = argv;
 
-const alt = require(path.join(__dirname, altText));
+const config = require(path.join(__dirname, configFile));
 
 const generateComponents = require('./generateComponents');
 
@@ -64,17 +63,11 @@ const generateSizes = (base) => {
   };
 };
 
-let sizes;
+const sizes = {};
 
-if (typeof baseSize === 'number') sizes = generateSizes(baseSize);
-else {
-  const baseSizes = require(path.join(__dirname, baseSize));
-  sizes = {};
-
-  Object.keys(baseSizes).forEach((key) => {
-    sizes[key] = generateSizes(baseSizes[key]);
-  });
-}
+Object.keys(config).forEach((key) => {
+  sizes[key] = generateSizes(config[key].size);
+});
 
 const imgList = [];
 
@@ -97,6 +90,7 @@ const cleanup = () => new Promise((resolve, reject) => {
 // Resize images.
 const resize = async () => {
   fs.mkdirSync(tmpPath);
+  fs.mkdtempSync(tmpPath);
   const imgs = fs.readdirSync(srcPath);
   const tasks = [];
 
@@ -105,7 +99,7 @@ const resize = async () => {
     const imgPath = path.join(srcPath, img);
     const ext = path.extname(img);
     const baseName = path.basename(img, ext);
-    const imgSizes = typeof baseSize === 'number' ? sizes : sizes[baseName];
+    const imgSizes = sizes[baseName];
     const processedSizes = [];
     const {width: srcWidth} = sizeOf(imgPath);
 
@@ -164,7 +158,7 @@ const sortImgs = async () => {
     const basename = slugify(baseName, {lower: true});
     fs.mkdirSync(path.join(targetPath, basename));
 
-    const imgSizes = typeof baseSize === 'number' ? sizes : sizes[baseName];
+    const imgSizes = sizes[baseName];
 
     const processedSizes = [];
     Object.keys(imgSizes).forEach((key) => {
@@ -236,11 +230,10 @@ const process = async () => {
   console.log('Done! Now generating your HTML code...');
 
   await generateComponents({
-    alt,
-    baseSize,
     buildPath,
     breakpoints,
     className,
+    config,
     files: imgList,
     lazyload,
     sizes,

@@ -4,11 +4,10 @@ const path = require('path');
 const slugify = require('slugify');
 
 const generateComponents = ({
-  alt,
-  baseSize,
   buildPath,
   breakpoints,
   className,
+  config,
   files,
   lazyload,
   sizes,
@@ -29,10 +28,10 @@ const generateComponents = ({
   }
 
   files.forEach((file) => {
-    const altText = alt[file];
+    const {alt: altText} = config[file];
     let output = `<picture class="${classNames.join(' ')}">\n`;
 
-    const imgSizes = typeof baseSize === 'number' ? sizes : sizes[file];
+    const imgSizes = sizes[file];
 
     const basename = slugify(file, {lower: true});
 

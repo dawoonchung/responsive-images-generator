@@ -37,6 +37,6 @@
     "root": true
   },
   "scripts": {
-    "build": "node index.js -s sizes.js -t assets/images -l"
+    "build": "node index.js -t assets/images -l"
   }
 }
