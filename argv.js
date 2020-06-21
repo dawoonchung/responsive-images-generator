@@ -9,10 +9,6 @@ const {argv} = yargs.options({
     normalize: true,
     type: 'string',
   },
-  className: {
-    description: 'HTML class name',
-    type: 'string',
-  },
   configFile: {
     alias: 'c',
     default: 'config.js',
@@ -31,6 +27,11 @@ const {argv} = yargs.options({
     description: 'Path to directory containing source image files.',
     normalize: true,
     type: 'string',
+  },
+  webp: {
+    default: true,
+    description: 'Whether or not to output webp images.',
+    type: 'boolean',
   },
 }).help().alias('help', 'h');
 

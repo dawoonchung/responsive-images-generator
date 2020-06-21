@@ -7,18 +7,18 @@
   "license": "MIT",
   "dependencies": {
     "camelcase": "^6.0.0",
-    "fs-extra": "^9.0.0",
+    "fs-extra": "^9.0.1",
     "gm": "^1.23.1",
     "image-size": "^0.8.3",
     "imagemin": "^7.0.1",
-    "imagemin-mozjpeg": "^8.0.0",
+    "imagemin-mozjpeg": "^9.0.0",
     "imagemin-webp": "^6.0.0",
     "promise": "^8.1.0",
     "slugify": "^1.4.0",
     "yargs": "^15.3.1"
   },
   "devDependencies": {
-    "eslint": "^7.1.0",
+    "eslint": "^7.3.0",
     "eslint-config-google": "^0.14.0"
   },
   "eslintConfig": {
@@ -37,6 +37,6 @@
     "root": true
   },
   "scripts": {
-    "build": "node index.js -t assets/images -l"
+    "build": "node index.js -t assets/images -l --no-webp"
   }
 }

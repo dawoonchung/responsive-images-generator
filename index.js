@@ -12,10 +12,10 @@ const argv = require('./argv');
 
 const {
   buildPath,
-  className,
   configFile,
   lazyload,
   source,
+  webp,
 } = argv;
 
 const config = require(path.join(__dirname, configFile));
@@ -77,20 +77,18 @@ const removeTmp = () => new Promise((resolve, reject) => fs.remove(
     (err) => err ? reject(err) : resolve(),
 ));
 
-// Cleanup directories before processing images.
-const cleanup = () => new Promise((resolve, reject) => {
-  const removeBuild = fs.remove(
-      targetPath,
-      (err) => err ? reject(err) : resolve(),
-  );
+// Remove build directory.
+const removeBuild = () => new Promise((resolve, reject) => fs.remove(
+    targetPath,
+    (err) => err ? reject(err) : resolve(),
+));
 
-  return Promise.all([removeTmp(), removeBuild]);
-});
+// Cleanup directories before processing images.
+const cleanup = () => Promise.all([removeTmp(), removeBuild()]);
 
 // Resize images.
 const resize = async () => {
   fs.mkdirSync(tmpPath);
-  fs.mkdtempSync(tmpPath);
   const imgs = fs.readdirSync(srcPath);
   const tasks = [];
 
@@ -111,8 +109,8 @@ const resize = async () => {
       if (processedSizes.includes(size)) return;
 
       if (size > srcWidth) {
-        console.warn('Target size larger than original!\n');
-        console.warn(`Target width: ${size}\n`);
+        console.warn('\nWARNING: Target size larger than original!');
+        console.warn(`Target width: ${size}`);
         console.warn(`Source width: ${srcWidth}\n`);
       }
 
@@ -166,17 +164,20 @@ const sortImgs = async () => {
 
       if (processedSizes.includes(size)) return;
 
+      if (webp) {
+        const webp = `${basename}-${size}w.webp`;
+        const renameWebp = new Promise((resolve, reject) => {
+          fs.rename(
+              path.join(targetPath, 'webp', webp),
+              path.join(targetPath, basename, webp),
+              (err) => err ? reject(err) : resolve(),
+          );
+        });
+
+        tasks.push(renameWebp);
+      }
+
       const jpg = `${basename}-${size}w.jpg`;
-      const webp = `${basename}-${size}w.webp`;
-
-      const renameWebp = new Promise((resolve, reject) => {
-        fs.rename(
-            path.join(targetPath, 'webp', webp),
-            path.join(targetPath, basename, webp),
-            (err) => err ? reject(err) : resolve(),
-        );
-      });
-
       const renameJpg = new Promise((resolve, reject) => {
         fs.rename(
             path.join(targetPath, 'jpg', jpg),
@@ -185,7 +186,6 @@ const sortImgs = async () => {
         );
       });
 
-      tasks.push(renameWebp);
       tasks.push(renameJpg);
 
       processedSizes.push(size);
@@ -218,7 +218,10 @@ const process = async () => {
 
   console.log('Resizing done! Now generating optimised assets...');
 
-  await Promise.all([processWebp(), processJPEG()]);
+  const optimiseTasks = [processJPEG()];
+  if (webp) optimiseTasks.push(processWebp());
+
+  await Promise.all(optimiseTasks);
 
   console.log('Assets generated successfully.');
   console.log('Sorting files and removing tmp files...');
@@ -232,12 +235,12 @@ const process = async () => {
   await generateComponents({
     buildPath,
     breakpoints,
-    className,
     config,
     files: imgList,
     lazyload,
     sizes,
     targetPath,
+    webp,
   });
 
   console.log('Done!!!');
