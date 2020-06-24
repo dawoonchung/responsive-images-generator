@@ -12,6 +12,7 @@
 /src
 /build
 alt.json
+config.js
 
 # misc
 .DS_Store
