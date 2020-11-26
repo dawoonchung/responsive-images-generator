@@ -10,7 +10,7 @@
 
 # production
 /src
-/build
+/assets
 alt.json
 config.js
 
